@@ -26,6 +26,7 @@ map<WORD, WORD> vmap;
 ofstream error_file("Error.txt");
 ofstream out;
 std::stringstream sstm;
+int primcount=0, numverts = 0;
 bool dumped;
 
 typedef struct _INIT_STRUCT 
@@ -250,8 +251,9 @@ HRESULT WINAPI MyDrawIndexedPrimitive(LPDIRECT3DDEVICE9 pDevice, D3DPRIMITIVETYP
 {
 	pDevice->GetIndices(&bound_indices);
 	
-	if(!dumped && PrimitiveCount == 2136 && NumVertices == 1469)
+	//if(!dumped && PrimitiveCount == 2136 && NumVertices == 1469)
 	//if(!dumped && PrimitiveCount == 6062 && NumVertices == 2517)
+	if(!dumped && PrimitiveCount == primcount && NumVertices == numverts)
 	{
 		if(bound_vertices != NULL)
 		{
@@ -277,7 +279,9 @@ extern "C" __declspec(dllexport) void InstallHook(LPVOID message)
 {
 	PINIT_STRUCT messageStruct = reinterpret_cast<PINIT_STRUCT>(message);	  
 	DrawIndexedPrimitive = (pDrawIndexedPrimitive)messageStruct->addresses[0];
-	SetStreamSource = (pSetStreamSource)messageStruct->addresses[2];
+	SetStreamSource = (pSetStreamSource)messageStruct->addresses[1];
+	primcount = messageStruct->addresses[2];
+	numverts = messageStruct->addresses[3];
 	DetourTransactionBegin();
 	DetourUpdateThread(GetCurrentThread());
 	DetourAttach(&(PVOID&)DrawIndexedPrimitive, MyDrawIndexedPrimitive);
