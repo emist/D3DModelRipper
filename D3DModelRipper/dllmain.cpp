@@ -40,6 +40,8 @@ struct vertex
 
 int GetIndex(vertex v);
 vertex GetVertex(WORD i, void * verts);
+bool VertContains(vertex v);
+
 vector<vertex> vertex_vec;
 
 HMODULE dll;
@@ -115,11 +117,24 @@ HRESULT WINAPI MySetStreamSource(LPDIRECT3DDEVICE9 pDevice, UINT StreamNumber, I
 HRESULT WINAPI PopulateTriangleList(UINT PrimCount, string filename, UINT MinIndex, UINT NumVertices, WORD * indices, void * verts)
 {
 	int f = 0;
-	for(int i = MinIndex; i < MinIndex+PrimCount-1; i++)
+
+	for(int i = MinIndex; i < MinIndex+PrimCount; i++)
+	{
+		vertex v = GetVertex(indices[i], verts);
+		if(!VertContains(v))
+		{
+			vertex_vec.push_back(v);
+			out << "v " << v.x << " " << v.y << " " << v.z << endl;
+		}
+
+		vmap[indices[i]] = GetIndex(v);
+	}
+
+	for(int i = MinIndex; i < MinIndex+PrimCount; i++)
 	{
 		if(f % 3 == 0)
 			out << endl << "f ";
-		out << indices[i]+1 << " ";
+		out << vmap[indices[i]] << " ";
 		f++;
 	}
 	return 0;
@@ -142,7 +157,7 @@ HRESULT WINAPI PopulateTriangleStrip(UINT PrimCount, string filename, UINT MinIn
 	int f = 0;
 	int count =0;
 
-	for(int i = MinIndex; i < MinIndex+PrimCount-1; i++)
+	for(int i = MinIndex; i < MinIndex+PrimCount; i++)
 	{
 		vertex v = GetVertex(indices[i], verts);
 		if(!VertContains(v))
@@ -154,7 +169,7 @@ HRESULT WINAPI PopulateTriangleStrip(UINT PrimCount, string filename, UINT MinIn
 		vmap[indices[i]] = GetIndex(v);
 	}
 
-	for(int i = MinIndex; i < MinIndex+PrimCount-1; i++)
+	for(int i = MinIndex; i < MinIndex+PrimCount; i++)
 	{
 		if(f % 3 == 0 && count <= 3)
 			out << endl << "f ";
@@ -236,6 +251,8 @@ HRESULT WINAPI MyDrawIndexedPrimitive(LPDIRECT3DDEVICE9 pDevice, D3DPRIMITIVETYP
 {
 	pDevice->GetIndices(&bound_indices);
 	
+	//2136×1469
+	//if(!dumped && PrimitiveCount == 2136 && NumVertices == 1469)
 	if(!dumped && PrimitiveCount == 6062 && NumVertices == 2517)
 	{
 		if(bound_vertices != NULL)
