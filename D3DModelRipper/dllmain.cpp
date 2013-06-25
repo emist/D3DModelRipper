@@ -24,7 +24,7 @@ using namespace std;
 vector<long> texturePointers;
 map<WORD, WORD> vmap;
 ofstream error_file("Error.txt");
-ofstream out("C:\\Users\\emist\\Desktop\\index.txt");
+ofstream out;
 std::stringstream sstm;
 bool dumped;
 
@@ -113,7 +113,6 @@ HRESULT WINAPI MySetStreamSource(LPDIRECT3DDEVICE9 pDevice, UINT StreamNumber, I
 	return SetStreamSource(pDevice, StreamNumber, pStreamData, OffsetInBytes, Stride);
 }
 
-//Needs to be worked with the mapping of verts buffer index to obj
 HRESULT WINAPI PopulateTriangleList(UINT PrimCount, string filename, UINT MinIndex, UINT NumVertices, WORD * indices, void * verts)
 {
 	int f = 0;
@@ -187,7 +186,7 @@ HRESULT WINAPI PopulateTriangleStrip(UINT PrimCount, string filename, UINT MinIn
 		f++;
 		count++;
 	}
-	out << "Face count= " << count << endl;
+	//out << "Face count= " << count << endl;
 
 	return 0;
 }
@@ -203,9 +202,9 @@ HRESULT WINAPI PopulateIndices(UINT PrimCount, UINT MinIndex, UINT NumVertices, 
 		WORD * indices = (WORD*)d;
 		int f = 0;
 		if(Type ==  D3DPT_TRIANGLELIST)
-			PopulateTriangleList(PrimCount, "hellowhatever", MinIndex, NumVertices, indices, verts);
+			PopulateTriangleList(PrimCount, "", MinIndex, NumVertices, indices, verts);
 		else if(Type == D3DPT_TRIANGLESTRIP)
-			PopulateTriangleStrip(PrimCount, "hellowhatever", MinIndex, NumVertices, indices, verts);
+			PopulateTriangleStrip(PrimCount, "", MinIndex, NumVertices, indices, verts);
 		bound_indices->Unlock();
 		return 0;
 }
@@ -251,9 +250,8 @@ HRESULT WINAPI MyDrawIndexedPrimitive(LPDIRECT3DDEVICE9 pDevice, D3DPRIMITIVETYP
 {
 	pDevice->GetIndices(&bound_indices);
 	
-	//2136×1469
-	//if(!dumped && PrimitiveCount == 2136 && NumVertices == 1469)
-	if(!dumped && PrimitiveCount == 6062 && NumVertices == 2517)
+	if(!dumped && PrimitiveCount == 2136 && NumVertices == 1469)
+	//if(!dumped && PrimitiveCount == 6062 && NumVertices == 2517)
 	{
 		if(bound_vertices != NULL)
 		{
@@ -292,12 +290,18 @@ BOOL APIENTRY DllMain( HMODULE hModule, DWORD  ul_reason_for_call,LPVOID lpReser
 	switch (ul_reason_for_call)
 	{
 	case DLL_PROCESS_ATTACH:
+		{
 		dll = hModule;
 		vertex f;
 		f.x = -0.00000001f;
 		f.y = -0.000000001f;
 		f.z = -0.00000001f;
 		vertex_vec.push_back(f);
+		string output;
+		output.append(BinaryPath());
+		output.append("\\model.obj");
+		out = ofstream(output);
+		}
 	case DLL_THREAD_ATTACH:
 	case DLL_THREAD_DETACH:
 	case DLL_PROCESS_DETACH:
