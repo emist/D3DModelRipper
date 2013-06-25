@@ -141,7 +141,7 @@ HRESULT WINAPI PopulateTriangleStrip(UINT PrimCount, string filename, UINT MinIn
 {
 	int f = 0;
 	int count =0;
-	out << "f ";
+
 	for(int i = MinIndex; i < MinIndex+PrimCount-1; i++)
 	{
 		vertex v = GetVertex(indices[i], verts);
