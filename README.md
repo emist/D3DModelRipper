@@ -28,4 +28,4 @@ Load the solution into visual studio and press F6
 
 <h2>Documentation</h2>
 
-[Docs](http://eryanbot.com/jtp/....)
+[Docs](http://eryanbot.com/jtp/2013/06/25/d3dmodelripper-extracting-models-from-directx9-games/)
