@@ -169,23 +169,18 @@ HRESULT WINAPI PopulateTriangleStrip(UINT PrimCount, string filename, UINT MinIn
 		vmap[indices[i]] = GetIndex(v);
 	}
 
-	for(int i = MinIndex; i < MinIndex+PrimCount; i++)
-	{
-		if(f % 3 == 0 && count <= 3)
-			out << endl << "f ";
+	//build initial face
+	out << "f " << vmap[indices[MinIndex]] << " " << vmap[indices[MinIndex+1]] << " " << vmap[indices[MinIndex+2]] << endl;
 
-		if(count < 3)
-		{
-			out << vmap[indices[i]] << " ";
-		}
-		else
-		{
-			out << vmap[indices[i-2]] << " ";
-			out << vmap[indices[i-1]] << " ";
-			out << vmap[indices[i]] << endl << "f ";
-		}
-		f++;
-		count++;
+	//skip the first 3vertices since we already used them to lay the first face
+	//Go from the fourth vertice until primitiveCount+2 (since we skipped the first two vertices, we need to add
+	//to the primcount to get all the faces in the model
+	for(int i = MinIndex+3; i < MinIndex+PrimCount+2; i++)
+	{	
+		out << "f ";
+		out << vmap[indices[i-2]] << " ";
+		out << vmap[indices[i-1]] << " ";
+		out << vmap[indices[i]] << endl;
 	}
 	//out << "Face count= " << count << endl;
 
