@@ -118,7 +118,7 @@ HRESULT WINAPI PopulateTriangleList(UINT PrimCount, string filename, UINT MinInd
 {
 	int f = 0;
 
-	for(int i = MinIndex; i < MinIndex+PrimCount; i++)
+	for(int i = MinIndex; i < MinIndex+PrimCount*3; i++)
 	{
 		vertex v = GetVertex(indices[i], verts);
 		if(!VertContains(v))
@@ -130,7 +130,7 @@ HRESULT WINAPI PopulateTriangleList(UINT PrimCount, string filename, UINT MinInd
 		vmap[indices[i]] = GetIndex(v);
 	}
 
-	for(int i = MinIndex; i < MinIndex+PrimCount; i++)
+	for(int i = MinIndex; i < MinIndex+PrimCount*3; i++)
 	{
 		if(f % 3 == 0)
 			out << endl << "f ";
