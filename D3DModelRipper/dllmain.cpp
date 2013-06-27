@@ -106,35 +106,41 @@ string BinaryPath()
 HRESULT WINAPI MySetStreamSource(LPDIRECT3DDEVICE9 pDevice, UINT StreamNumber, IDirect3DVertexBuffer9 *pStreamData, 
 								 UINT OffsetInBytes, UINT Stride)
 {
-	bound_vertices = pStreamData;  
-	if(pStreamData != NULL)
-		pStreamData->GetDesc(&vertex_desc);
-	stream_number = StreamNumber;
-	stride = Stride;
+	//assumes that vertices will be at stream0. Needed for multi-stream games.
+	if(StreamNumber == 0)
+	{
+		bound_vertices = pStreamData;  
+		if(pStreamData != NULL)
+			pStreamData->GetDesc(&vertex_desc);
+		stream_number = StreamNumber;
+		stride = Stride;
+	}
 	return SetStreamSource(pDevice, StreamNumber, pStreamData, OffsetInBytes, Stride);
 }
 
-HRESULT WINAPI PopulateTriangleList(UINT PrimCount, string filename, UINT MinIndex, UINT NumVertices, WORD * indices, void * verts)
+HRESULT WINAPI PopulateTriangleList(UINT PrimCount, string filename, UINT StartIndex, UINT MinIndex, INT BaseVertexIndex, UINT NumVertices, WORD * indices, void * verts)
 {
 	int f = 0;
 
-	for(int i = MinIndex; i < MinIndex+PrimCount*3; i++)
+	for(int i = StartIndex; i < StartIndex+PrimCount*3; i++)
 	{
-		vertex v = GetVertex(indices[i], verts);
+		vertex v = GetVertex(indices[i]+BaseVertexIndex, verts);
 		if(!VertContains(v))
 		{
 			vertex_vec.push_back(v);
 			out << "v " << v.x << " " << v.y << " " << v.z << endl;
 		}
 
-		vmap[indices[i]] = GetIndex(v);
+		vmap[indices[i]+BaseVertexIndex] = GetIndex(v);
+		//out << "Building Mapkey= " << indices[i]+BaseVertexIndex << endl;
 	}
 
-	for(int i = MinIndex; i < MinIndex+PrimCount*3; i++)
+	for(int i = StartIndex; i < StartIndex+PrimCount*3; i++)
 	{
 		if(f % 3 == 0)
 			out << endl << "f ";
-		out << vmap[indices[i]] << " ";
+		//out << "Requesting Mapkey= " << indices[i]+BaseVertexIndex << endl;
+		out << vmap[indices[i]+BaseVertexIndex] << " ";
 		f++;
 	}
 	return 0;
@@ -152,42 +158,43 @@ bool VertContains(vertex v)
 	return false;
 }
 
-HRESULT WINAPI PopulateTriangleStrip(UINT PrimCount, string filename, UINT MinIndex, UINT NumVertices, WORD * indices, void * verts)
+HRESULT WINAPI PopulateTriangleStrip(UINT PrimCount, string filename, UINT StartIndex, UINT MinIndex, UINT BaseVertexIndex, UINT NumVertices, WORD * indices, void * verts)
 {
 	int f = 0;
 	int count =0;
 
-	for(int i = MinIndex; i < MinIndex+PrimCount; i++)
+	for(int i = StartIndex; i < StartIndex+PrimCount; i++)
 	{
-		vertex v = GetVertex(indices[i], verts);
+		vertex v = GetVertex(indices[i]+BaseVertexIndex, verts);
 		if(!VertContains(v))
 		{
 			vertex_vec.push_back(v);
 			out << "v " << v.x << " " << v.y << " " << v.z << endl;
 		}
 
-		vmap[indices[i]] = GetIndex(v);
+		vmap[indices[i]+BaseVertexIndex] = GetIndex(v);
 	}
 
 	//build initial face
-	out << "f " << vmap[indices[MinIndex]] << " " << vmap[indices[MinIndex+1]] << " " << vmap[indices[MinIndex+2]] << endl;
+	out << "f " << vmap[indices[StartIndex]+BaseVertexIndex] << " " << vmap[indices[StartIndex+1]+BaseVertexIndex]
+	<< " " << vmap[indices[StartIndex+2]+BaseVertexIndex] << endl;
 
 	//skip the first 3vertices since we already used them to lay the first face
 	//Go from the fourth vertice until primitiveCount+2 (since we skipped the first two vertices, we need to add
 	//to the primcount to get all the faces in the model
-	for(int i = MinIndex+3; i < MinIndex+PrimCount+2; i++)
+	for(int i = StartIndex+3; i < StartIndex+PrimCount+2; i++)
 	{	
 		out << "f ";
-		out << vmap[indices[i-2]] << " ";
-		out << vmap[indices[i-1]] << " ";
-		out << vmap[indices[i]] << endl;
+		out << vmap[indices[i-2]+BaseVertexIndex] << " ";
+		out << vmap[indices[i-1]+BaseVertexIndex] << " ";
+		out << vmap[indices[i]+BaseVertexIndex] << endl;
 	}
 	//out << "Face count= " << count << endl;
 
 	return 0;
 }
 
-HRESULT WINAPI PopulateIndices(UINT PrimCount, UINT MinIndex, UINT NumVertices, INT BaseVertexIndex, D3DPRIMITIVETYPE Type, void * verts)
+HRESULT WINAPI PopulateIndices(UINT PrimCount, UINT StartIndex, UINT MinIndex, UINT NumVertices, INT BaseVertexIndex, D3DPRIMITIVETYPE Type, void * verts)
 {
 		if(bound_indices == NULL)
 		{
@@ -198,9 +205,9 @@ HRESULT WINAPI PopulateIndices(UINT PrimCount, UINT MinIndex, UINT NumVertices, 
 		WORD * indices = (WORD*)d;
 		int f = 0;
 		if(Type ==  D3DPT_TRIANGLELIST)
-			PopulateTriangleList(PrimCount, "", MinIndex, NumVertices, indices, verts);
+			PopulateTriangleList(PrimCount, "", StartIndex, MinIndex, BaseVertexIndex, NumVertices, indices, verts);
 		else if(Type == D3DPT_TRIANGLESTRIP)
-			PopulateTriangleStrip(PrimCount, "", MinIndex, NumVertices, indices, verts);
+			PopulateTriangleStrip(PrimCount, "", StartIndex, MinIndex, BaseVertexIndex, NumVertices, indices, verts);
 		bound_indices->Unlock();
 		return 0;
 }
@@ -262,7 +269,8 @@ HRESULT WINAPI MyDrawIndexedPrimitive(LPDIRECT3DDEVICE9 pDevice, D3DPRIMITIVETYP
 			//out << "MinIndex= " << MinIndex << endl;
 			//out << "StartVertexIndex=" << StartIndex << endl;
 			//out << "BaseVertexIndex= " << BaseVertexIndex << endl;
-			PopulateIndices(PrimitiveCount, MinIndex, NumVertices, BaseVertexIndex, Type, data);
+			//out << "StartIndex= " << StartIndex << endl;
+			PopulateIndices(PrimitiveCount, StartIndex, MinIndex, NumVertices, BaseVertexIndex, Type, data);
 			bound_vertices->Unlock();
 		}
 		dumped = true;
